@@ -30,6 +30,7 @@ export default function FinanceForm({ onCalculate, initialValues }) {
     tilgungRate: toInputString(initialValues?.tilgungRate ?? 2.0),
     sondertilgungRate: toInputString(initialValues?.sondertilgungRate ?? 1.0),
     hauptLaufzeitJahre: toInputString(initialValues?.hauptLaufzeitJahre ?? 15),
+    includeKfw: initialValues?.includeKfw === undefined ? true : Boolean(initialValues.includeKfw),
     kfwDarlehen: toInputString(initialValues?.kfwDarlehen ?? 100000),
     kfwZinssatz: toInputString(initialValues?.kfwZinssatz ?? 1.5),
     kfwLaufzeitJahre: toInputString(initialValues?.kfwLaufzeitJahre ?? 10)
@@ -41,7 +42,11 @@ export default function FinanceForm({ onCalculate, initialValues }) {
         const updated = { ...prev };
         Object.entries(initialValues).forEach(([key, value]) => {
           if (Object.prototype.hasOwnProperty.call(prev, key)) {
-            updated[key] = toInputString(value);
+            if (key === 'includeKfw') {
+              updated[key] = Boolean(value);
+            } else {
+              updated[key] = toInputString(value);
+            }
           }
         });
         return updated;
@@ -50,27 +55,32 @@ export default function FinanceForm({ onCalculate, initialValues }) {
   }, [initialValues]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const includeKfwActive = Boolean(formData.includeKfw);
     const normalizedData = {
+      includeKfw: includeKfwActive,
       hauptdarlehen: toNumber(formData.hauptdarlehen),
       hauptZinssatz: toNumber(formData.hauptZinssatz),
       tilgungRate: toNumber(formData.tilgungRate),
       sondertilgungRate: toNumber(formData.sondertilgungRate),
       hauptLaufzeitJahre: Math.max(0, Math.round(toNumber(formData.hauptLaufzeitJahre))),
-      kfwDarlehen: toNumber(formData.kfwDarlehen),
-      kfwZinssatz: toNumber(formData.kfwZinssatz),
+      kfwDarlehen: includeKfwActive ? toNumber(formData.kfwDarlehen) : 0,
+      kfwZinssatz: includeKfwActive ? toNumber(formData.kfwZinssatz) : 0,
       kfwLaufzeitJahre: Math.min(10, Math.max(0, Math.round(toNumber(formData.kfwLaufzeitJahre))))
     };
     onCalculate(normalizedData);
   };
+
+  const includeKfw = Boolean(formData.includeKfw);
+  const kfwDisabled = !includeKfw;
 
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6">
@@ -129,6 +139,23 @@ export default function FinanceForm({ onCalculate, initialValues }) {
         {/* KfW Darlehen Section */}
         <div>
           <h3 className="text-lg font-semibold mb-4 text-gray-700">KfW-Darlehen</h3>
+          <div className="flex items-center mb-3">
+            <input
+              id="includeKfw"
+              type="checkbox"
+              name="includeKfw"
+              checked={includeKfw}
+              onChange={handleChange}
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="includeKfw" className="ml-2 text-sm text-gray-700">
+              KfW-Darlehen berücksichtigen
+            </label>
+          </div>
+          <p className={`text-xs mb-4 ${kfwDisabled ? 'text-gray-400' : 'text-gray-600'}`}>
+            Tilgung fest: 2% p.a., keine Sondertilgung. Restschuld nach Ende der Laufzeit (max. 10 Jahre)
+            wird in das Hauptdarlehen übernommen oder sofort fällig.
+          </p>
           <InputField
             label="KfW-Darlehenssumme"
             name="kfwDarlehen"
@@ -136,6 +163,7 @@ export default function FinanceForm({ onCalculate, initialValues }) {
             onChange={handleChange}
             step="1000"
             suffix="€"
+            disabled={kfwDisabled}
           />
           <InputField
             label="KfW-Zinssatz"
@@ -144,6 +172,7 @@ export default function FinanceForm({ onCalculate, initialValues }) {
             onChange={handleChange}
             step="0.01"
             suffix="%"
+            disabled={kfwDisabled}
           />
           <InputField
             label="KfW-Laufzeit"
@@ -154,6 +183,7 @@ export default function FinanceForm({ onCalculate, initialValues }) {
             max="10"
             suffix="Jahre"
             helperText="Maximal 10 Jahre (automatisch begrenzt)."
+            disabled={kfwDisabled}
           />
         </div>
       </div>
@@ -179,7 +209,8 @@ function InputField({
   options,
   min,
   max,
-  helperText
+  helperText,
+  disabled = false
 }) {
   const inputId = name;
   const hasOptions = Array.isArray(options) && options.length > 0;
@@ -197,7 +228,8 @@ function InputField({
             name={name}
             value={value ?? ''}
             onChange={onChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+            disabled={disabled}
           >
             {options.map(option => (
               <option key={option.value} value={option.value}>
@@ -215,11 +247,16 @@ function InputField({
             step={step}
             min={min}
             max={max}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+            disabled={disabled}
           />
         )}
         {hasSuffix && (
-          <span className="absolute right-3 top-2 text-gray-500 text-sm">
+          <span
+            className={`absolute right-3 top-2 text-sm ${
+              disabled ? 'text-gray-400' : 'text-gray-500'
+            }`}
+          >
             {suffix}
           </span>
         )}

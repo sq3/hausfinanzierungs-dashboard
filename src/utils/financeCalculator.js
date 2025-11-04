@@ -119,13 +119,18 @@ export function calculateFinancing(params) {
     tilgungRate,
     sondertilgungRate,
     hauptLaufzeitJahre,
+    includeKfw = true,
     kfwDarlehen = 100000,
     kfwZinssatz,
     kfwLaufzeitJahre = 10
   } = params;
 
+  const kfwPrincipal = includeKfw ? Math.max(0, kfwDarlehen) : 0;
+  const sanitizedKfwRate = Number.isFinite(kfwZinssatz) ? Math.max(0, kfwZinssatz) : 0;
+  const kfwEnabled = includeKfw && kfwPrincipal > 0;
+
   // Berechne Hauptdarlehen (ohne KfW-Anteil)
-  const hauptdarlehenBetrag = Math.max(0, hauptdarlehen - kfwDarlehen);
+  const hauptdarlehenBetrag = Math.max(0, hauptdarlehen - (kfwEnabled ? kfwPrincipal : 0));
   const hauptLaufzeit = hauptLaufzeitJahre ? Math.max(1, hauptLaufzeitJahre) : null;
   const hauptResult = calculateLoan(
     hauptdarlehenBetrag,
@@ -136,18 +141,32 @@ export function calculateFinancing(params) {
   );
 
   // Berechne KfW-Darlehen
-  const effektiveKfwLaufzeit = Math.min(10, Math.max(0, kfwLaufzeitJahre || 10));
-  const kfwResult = calculateLoan(
-    kfwDarlehen,
-    kfwZinssatz,
-    tilgungRate,
-    sondertilgungRate,
-    effektiveKfwLaufzeit
-  );
+  let kfwResult = {
+    schedule: [],
+    totalMonths: 0,
+    totalInterest: 0,
+    totalAmount: 0,
+    remainingPrincipal: 0,
+    principalPaid: 0,
+    termMonths: 0,
+    hasPlannedTerm: false,
+    monthlySonderRuecklage: 0
+  };
+
+  if (kfwEnabled) {
+    const effektiveKfwLaufzeit = Math.min(10, Math.max(1, kfwLaufzeitJahre || 10));
+    kfwResult = calculateLoan(kfwPrincipal, sanitizedKfwRate, 2, 0, effektiveKfwLaufzeit);
+  }
 
   // Kombiniere die monatlichen Zeitpläne
   const maxLength = Math.max(hauptResult.schedule.length, kfwResult.schedule.length);
   const combinedSchedule = [];
+  const kfwScheduleLength = kfwResult.schedule.length;
+  const kfwFinalRest =
+    kfwScheduleLength > 0
+      ? kfwResult.schedule[kfwScheduleLength - 1].restschuld
+      : kfwResult.remainingPrincipal;
+  let kfwOutstanding = kfwFinalRest;
 
   for (let i = 0; i < maxLength; i++) {
     const hauptMonth = hauptResult.schedule[i] || {
@@ -159,14 +178,20 @@ export function calculateFinancing(params) {
       restschuld: 0
     };
 
-    const kfwMonth = kfwResult.schedule[i] || {
-      zinsen: 0,
-      tilgung: 0,
-      sondertilgung: 0,
-      sonderRuecklage: 0,
-      gesamtrate: 0,
-      restschuld: 0
-    };
+    let kfwMonth;
+    if (i < kfwScheduleLength) {
+      kfwMonth = kfwResult.schedule[i];
+      kfwOutstanding = kfwMonth.restschuld;
+    } else {
+      kfwMonth = {
+        zinsen: 0,
+        tilgung: 0,
+        sondertilgung: 0,
+        sonderRuecklage: 0,
+        gesamtrate: 0,
+        restschuld: kfwOutstanding
+      };
+    }
 
     combinedSchedule.push({
       month: i + 1,
@@ -202,14 +227,18 @@ export function calculateFinancing(params) {
       monthlySonderRuecklage: hauptResult.monthlySonderRuecklage
     },
     kfwDarlehen: {
-      betrag: kfwDarlehen,
+      enabled: kfwEnabled,
+      betrag: kfwPrincipal,
+      zinssatz: sanitizedKfwRate,
       totalInterest: kfwResult.totalInterest,
       totalMonths: kfwResult.totalMonths,
       plannedMonths: kfwResult.termMonths,
       remainingPrincipal: kfwResult.remainingPrincipal,
       principalPaid: kfwResult.principalPaid,
       hasPlannedTerm: kfwResult.hasPlannedTerm,
-      monthlySonderRuecklage: kfwResult.monthlySonderRuecklage
+      monthlySonderRuecklage: kfwResult.monthlySonderRuecklage,
+      transferMonth: kfwResult.termMonths,
+      transferAmount: kfwResult.remainingPrincipal
     },
     gesamt: {
       darlehen: hauptdarlehen,
@@ -217,7 +246,10 @@ export function calculateFinancing(params) {
       totalAmount: hauptResult.totalAmount + kfwResult.totalAmount,
       principalPaid: hauptResult.principalPaid + kfwResult.principalPaid,
       totalMonths: maxLength,
-      remainingPrincipal: hauptResult.remainingPrincipal + kfwResult.remainingPrincipal,
+      remainingPrincipal:
+        hauptResult.remainingPrincipal + (kfwEnabled ? kfwResult.remainingPrincipal : 0),
+      remainingPrincipalMainLoan: hauptResult.remainingPrincipal,
+      remainingPrincipalKfw: kfwEnabled ? kfwResult.remainingPrincipal : 0,
       monthlySonderRuecklage:
         (hauptResult.monthlySonderRuecklage || 0) + (kfwResult.monthlySonderRuecklage || 0)
     }

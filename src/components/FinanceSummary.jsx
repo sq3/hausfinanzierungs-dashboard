@@ -29,6 +29,17 @@ export default function FinanceSummary({ result }) {
       : 'Bis zur vollständigen Tilgung';
   };
 
+  const formatTransferMonth = (month) => {
+    if (!month) {
+      return '–';
+    }
+    const year = Math.ceil(month / 12);
+    return `Monat ${month} (Jahr ${year})`;
+  };
+
+  const kfwEnabled = Boolean(result.kfwDarlehen?.enabled);
+  const gridCols = kfwEnabled ? 'md:grid-cols-3' : 'md:grid-cols-2';
+
   const SummaryCard = ({ title, items, bgColor = "bg-gray-50" }) => (
     <div className={`${bgColor} rounded-lg p-4 shadow`}>
       <h4 className="font-semibold text-gray-700 mb-3">{title}</h4>
@@ -45,7 +56,7 @@ export default function FinanceSummary({ result }) {
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
       <h3 className="text-xl font-semibold mb-4 text-gray-800">Finanzierungsübersicht</h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 ${gridCols} gap-4`}>
         {/* Hauptdarlehen */}
         <SummaryCard
           title="Hauptdarlehen"
@@ -61,18 +72,21 @@ export default function FinanceSummary({ result }) {
         />
 
         {/* KfW Darlehen */}
-        <SummaryCard
-          title="KfW-Darlehen"
-          bgColor="bg-green-50"
-          items={[
-            { label: 'Darlehensbetrag', value: formatCurrency(result.kfwDarlehen.betrag) },
-            { label: 'Gesamtzinsen', value: formatCurrency(result.kfwDarlehen.totalInterest) },
-            { label: 'Laufzeit (geplant)', value: formatPlannedTerm(result.kfwDarlehen) },
-            { label: 'Simulierte Laufzeit', value: formatMonths(result.kfwDarlehen.totalMonths) },
-            { label: 'Monatliche Sondertilgungs-Rücklage', value: formatCurrency(result.kfwDarlehen.monthlySonderRuecklage || 0) },
-            { label: 'Restschuld nach Laufzeit', value: formatCurrency(result.kfwDarlehen.remainingPrincipal) }
-          ]}
-        />
+        {kfwEnabled && (
+          <SummaryCard
+            title="KfW-Darlehen"
+            bgColor="bg-green-50"
+            items={[
+              { label: 'Darlehensbetrag', value: formatCurrency(result.kfwDarlehen.betrag) },
+              { label: 'Gesamtzinsen', value: formatCurrency(result.kfwDarlehen.totalInterest) },
+              { label: 'Laufzeit (geplant)', value: formatPlannedTerm(result.kfwDarlehen) },
+              { label: 'Simulierte Laufzeit', value: formatMonths(result.kfwDarlehen.totalMonths) },
+              { label: 'Fälliger Übertrag', value: formatCurrency(result.kfwDarlehen.transferAmount) },
+              { label: 'Fälligkeitspunkt', value: formatTransferMonth(result.kfwDarlehen.transferMonth) },
+              { label: 'Restschuld nach Laufzeit', value: formatCurrency(result.kfwDarlehen.remainingPrincipal) }
+            ]}
+          />
+        )}
 
         {/* Gesamt */}
         <SummaryCard
@@ -85,10 +99,17 @@ export default function FinanceSummary({ result }) {
             { label: 'Gesamtkosten (gezahlt)', value: formatCurrency(result.gesamt.totalAmount) },
             { label: 'Längste simulierte Laufzeit', value: formatMonths(result.gesamt.totalMonths) },
             { label: 'Monatliche Sondertilgungs-Rücklage', value: formatCurrency(result.gesamt.monthlySonderRuecklage || 0) },
-            { label: 'Restschuld nach Laufzeit', value: formatCurrency(result.gesamt.remainingPrincipal) }
+            { label: 'Restschuld Hauptdarlehen', value: formatCurrency(result.gesamt.remainingPrincipalMainLoan || 0) },
+            { label: 'Restschuld inkl. KfW-Übertrag', value: formatCurrency(result.gesamt.remainingPrincipal) }
           ]}
         />
       </div>
+
+      {!kfwEnabled && (
+        <div className="mt-4 bg-green-50 border border-green-200 text-green-800 text-sm rounded-md px-4 py-3">
+          KfW-Darlehen ist deaktiviert. Die Auswertung zeigt ausschließlich das Hauptdarlehen.
+        </div>
+      )}
 
       {/* Monatliche Rate */}
       <div className="mt-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-4">
