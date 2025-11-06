@@ -2,6 +2,9 @@
 
 Eine React-Anwendung (Vite + Tailwind CSS) zur Simulation und Visualisierung komplexer Immobilien­finanzierungen mit getrennten Haupt- und KfW-Darlehen. Alle Texte der Oberfläche sind auf Deutsch, die README bleibt ebenfalls überwiegend deutschsprachig.
 
+## Live-Demo
+[https://hausfinanzierung.vercel.app/](https://hausfinanzierung.vercel.app/)
+
 ## Highlights
 - **Umfassende Eingabe**: Annuitätendarlehen mit Zinssatz, Tilgung, Sondertilgung und optionalem KfW-Anteil (inkl. Laufzeitbegrenzung auf 10 Jahre).
 - **Übersicht & Analyse**: Karten mit Kennzahlen (Zinsen, Restschuld, Gesamtkosten, Sondertilgungs-Rücklage) sowie ein monatlich aufgelöster Tilgungsplan.
