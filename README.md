@@ -1,140 +1,75 @@
 # Hausfinanzierungs-Dashboard
 
-Eine moderne Web-Anwendung zur Berechnung und Visualisierung von Immobilienfinanzierungen mit separater Haupt- und KfW-Darlehensberechnung.
+Eine React-Anwendung (Vite + Tailwind CSS) zur Simulation und Visualisierung komplexer Immobilien­finanzierungen mit getrennten Haupt- und KfW-Darlehen. Alle Texte der Oberfläche sind auf Deutsch, die README bleibt ebenfalls überwiegend deutschsprachig.
 
-## Features
-
-- **Interaktive Eingabe**: Einfache Formulareingabe für alle relevanten Finanzierungsparameter
-- **Duale Darlehensberechnung**: Separate Berechnung für Hauptdarlehen und KfW-Förderung
-- **Visualisierung**: Interaktive Diagramme für Zinsen, Tilgung und Restschuldverlauf
-- **Datenpersistierung**: Automatisches Speichern aller Eingaben im Browser (LocalStorage)
-- **Responsive Design**: Optimiert für Desktop und mobile Geräte
-- **Monatsgenaue Berechnung**: Detaillierter Tilgungsplan auf Monatsbasis
-
-## Installation
-
-```bash
-# Dependencies installieren
-npm install
-
-# Development Server starten
-npm run dev
-
-# Production Build erstellen
-npm run build
-
-# Preview des Production Builds
-npm run preview
-```
-
-## Verwendung
-
-1. Öffne die App im Browser (standardmäßig auf `http://localhost:5173`)
-2. Gib die Parameter für deine Finanzierung ein:
-   - **Hauptdarlehen**: Darlehenssumme, Zinssatz, Tilgung, Sondertilgung
-   - **KfW-Darlehen**: Darlehenssumme (default 100.000€), Zinssatz, Laufzeit
-3. Klicke auf "Berechnen"
-4. Betrachte die Zusammenfassung und Visualisierungen
-5. Alle Daten werden automatisch gespeichert und beim nächsten Besuch wiederhergestellt
-
-## Deployment
-
-### Vercel (Empfohlen)
-
-1. Repository auf GitHub pushen
-2. Gehe zu [vercel.com](https://vercel.com) und verbinde dein GitHub-Repository
-3. Vercel erkennt automatisch das Vite-Projekt
-4. Klicke auf "Deploy"
-
-**Oder via CLI:**
-
-```bash
-npm install -g vercel
-vercel
-```
-
-### Netlify
-
-1. Repository auf GitHub pushen
-2. Gehe zu [netlify.com](https://netlify.com)
-3. "New site from Git" auswählen
-4. Repository verbinden
-5. Build-Einstellungen:
-   - Build command: `npm run build`
-   - Publish directory: `dist`
-6. Deploy starten
-
-**Oder via CLI:**
-
-```bash
-npm install -g netlify-cli
-npm run build
-netlify deploy --prod --dir=dist
-```
-
-### GitHub Pages
-
-```bash
-# Installiere gh-pages
-npm install --save-dev gh-pages
-
-# In package.json die homepage hinzufügen:
-# "homepage": "https://<username>.github.io/<repo-name>"
-
-# Deploy Script in package.json hinzufügen:
-# "deploy": "npm run build && gh-pages -d dist"
-
-# Deployen
-npm run deploy
-```
-
-**Wichtig für GitHub Pages:** Füge in `vite.config.js` die `base` Option hinzu:
-
-```javascript
-export default defineConfig({
-  plugins: [react()],
-  base: '/<repo-name>/'
-})
-```
+## Highlights
+- **Umfassende Eingabe**: Annuitätendarlehen mit Zinssatz, Tilgung, Sondertilgung und optionalem KfW-Anteil (inkl. Laufzeitbegrenzung auf 10 Jahre).
+- **Übersicht & Analyse**: Karten mit Kennzahlen (Zinsen, Restschuld, Gesamtkosten, Sondertilgungs-Rücklage) sowie ein monatlich aufgelöster Tilgungsplan.
+- **Visualisierung**: Recharts-Diagramme zeigen Zins-/Tilgungsverlauf und Restschuldentwicklung.
+- **Persistente Daten**: Alle Eingaben werden unter dem LocalStorage-Key `hausfinanzierung-data` gespeichert und lassen sich gezielt zurücksetzen.
+- **Responsive UI**: Tailwind CSS sorgt dafür, dass Formular, Auswertung und Charts auf Desktop und Mobilgeräten funktionieren.
+- **Status der KfW-Berechnung**: Der KfW-Zweig befindet sich noch im Aufbau; Ergebnisse gelten vorerst als experimentell.
 
 ## Technologie-Stack
+- React 19 + React DOM 19
+- Vite 7
+- Tailwind CSS 3
+- Recharts 3
+- ESLint 9 (konfiguriert für React Hooks & React Refresh)
 
-- **React 18**: UI Framework
-- **Vite**: Build Tool und Development Server
-- **Recharts**: Datenvisualisierung
-- **Tailwind CSS**: Styling
-- **LocalStorage API**: Datenpersistierung
+## Voraussetzungen
+- Node.js ≥ 18 (Empfehlung: LTS-Version)
+- npm ≥ 9
+
+## Lokale Entwicklung
+```bash
+# Abhängigkeiten installieren
+npm install
+
+# Entwicklungsserver mit Hot Module Reloading starten
+npm run dev
+
+# Produktionsbuild erzeugen
+npm run build
+
+# Gebauten Stand lokal testen
+npm run preview
+
+# Optional: statische Codeanalyse
+npm run lint
+```
+
+Der Dev-Server läuft standardmäßig auf `http://localhost:5173`.
 
 ## Projektstruktur
-
-```
+```text
 src/
+├── App.jsx                   # Hauptcontainer inkl. Laden/Speichern der Formulardaten
+├── assets/                   # Statische Assets (z. B. Logos)
 ├── components/
-│   ├── FinanceForm.jsx      # Eingabeformular
-│   ├── FinanceSummary.jsx   # Übersicht der Ergebnisse
-│   └── FinanceChart.jsx     # Diagramme
+│   ├── FinanceForm.jsx       # Formular und Input-Komponenten für Haupt-/KfW-Daten
+│   ├── FinanceSummary.jsx    # Kennzahl-Übersicht inkl. Formatierung in EUR
+│   └── FinanceChart.jsx      # Recharts-Auswertungen zu Zinsen/Tilgung/Restschuld
 ├── utils/
-│   └── financeCalculator.js # Berechnungslogik
-├── App.jsx                  # Hauptkomponente
-├── main.jsx                # Entry Point
-└── index.css               # Globale Styles
+│   └── financeCalculator.js  # Fachliche Berechnungslogik inkl. Sondertilgungen
+├── index.css                 # Tailwind Entry + Grundlayout
+└── main.jsx                  # React-Einstiegspunkt (StrictMode)
+```
 
-## Berechnungslogik
+## Berechnungslogik in Kürze
+- `calculateLoan` erzeugt einen monatlichen Tilgungsplan nach Annuitäten-Logik, berücksichtigt optionale Sondertilgungen (jährlich bzw. am Laufzeitende) und liefert Kennzahlen wie Restschuld, gezahlte Zinsen sowie die benötigte Sondertilgungs-Rücklage.
+- `calculateFinancing` kombiniert Haupt- und KfW-Darlehen: KfW-Raten werden automatisch vom Hauptdarlehen separiert, Laufzeiten werden synchronisiert, und der kombinierte Plan dient als Grundlage für Diagramme und Kennzahlen. Hinweis: Der KfW-Pfad wird aktuell überarbeitet; Rückmeldungen zu Abweichungen sind willkommen.
+- Die KfW-Laufzeit ist auf maximal 10 Jahre begrenzt; Restschulden nach Ablauf werden separat ausgewiesen.
 
-Die App berechnet:
+## Datenpersistenz & Reset
+- Die Anwendung speichert Formular- und Ergebnisdaten automatisch im Browser (`localStorage`).
+- Über den Button „Daten zurücksetzen“ lässt sich der Speicher leeren und die App in den Ausgangszustand versetzen.
 
-1. **Monatliche Raten**: Zinsen, Tilgung und Sondertilgung
-2. **Restschuldverlauf**: Monatsgenaue Entwicklung der Restschuld
-3. **Gesamtkosten**: Summe aller Zinszahlungen über die Laufzeit
-4. **Separate Berechnung**: Unterschiedliche Zinssätze und Laufzeiten für Haupt- und KfW-Darlehen
+## Deployment-Hinweise
+Der Build erzeugt ein statisches Bundle im Verzeichnis `dist/`. Das Projekt eignet sich für Hosting-Anbieter wie Vercel, Netlify oder GitHub Pages. Für GitHub Pages muss in `vite.config.js` eine `base`-URL gesetzt werden, falls das Repository nicht auf der Root-Domain liegt.
 
-Die Formeln basieren auf dem Annuitätendarlehen-Modell mit Sondertilgungsoption.
-
-## Hinweis
-
-Diese Anwendung dient nur zu Informationszwecken. Für eine verbindliche Finanzierungsberatung konsultieren Sie bitte einen qualifizierten Finanzberater oder Ihre Bank.
+## Haftungsausschluss
+Alle Ergebnisse sind Richtwerte und ersetzen keine persönliche Beratung. Für verbindliche Angebote wenden Sie sich an Ihre Bank oder eine qualifizierte Finanzberaterin / einen qualifizierten Finanzberater.
 
 ## Lizenz
-
-MIT
-```
+Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0). Kommerzielle Nutzung und Verbreitung sind untersagt; private, akademische oder interne Nutzung sowie Modifikationen sind erlaubt, sofern die ursprüngliche Quelle genannt wird.
